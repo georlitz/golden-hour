@@ -8,7 +8,7 @@ import os
 import random
 import sys
 
-from golden_hour import configuration, sunset, timelapse, tweet, weather
+from golden_hour import configuration, twilight, timelapse, tweet, weather
 from golden_hour.location import get_location
 
 logger = logging.getLogger()
@@ -58,6 +58,11 @@ def main():
         help='configuration file where to find API keys and location information. '
              'Defaults to ~/.config/golden-hour.yaml'
     )
+    parser.add_argument('--event',
+        type=str,
+        default='sunset',
+        help='event to capture (sunrise/sunset',
+    )
     parser.add_argument('--duration',
         metavar='seconds',
         type=int,
@@ -71,11 +76,11 @@ def main():
         default=8,
         help='time between captured photos',
     )
-    parser.add_argument('--start-before-sunset',
+    parser.add_argument('--start-before-event',
         metavar='minutes',
         type=int,
         default=None,
-        help='number of minutes before sunset to start timelapse',
+        help='number of minutes before sunrise/sunset to start timelapse',
     )
     parser.add_argument('--post-to-twitter',
         action='store_true',
@@ -112,21 +117,27 @@ def main():
             logger.error('Error: Timelapse video will be too long to upload to Twitter (max 30 seconds)')
             exit(2)
 
-    if args.start_before_sunset is not None:
-        sunset.wait_for_sunset(location, args.start_before_sunset)
+    if args.start_before_event is not None:
+        if args.event = 'sunrise':
+            twilight.wait_for_sunrise(location, args.start_before_event)
+        else if args.event = 'sunset':
+            twilight.wait_for_sunset(location, args.start_before_event)
+        else:
+            logger.error('Error: Event type not understood. Needs either sunrise or sunset')
+            exit(3)
 
     if not args.skip_timelapse:
         timelapse.create_timelapse(args.duration, args.interval, timelapse_filename)
 
     if 'darksky_key' in config:
         darksky_key = config['darksky_key']
-        sunset_time = sunset.get_today_sunset_time(location)
-        forecast = weather.get_sunset_forecast(
+        event_time = twilight.get_today_sunset_time(location) if args.event == 'sunset' else twilight.get_today_sunrise_time(location)
+        forecast = weather.get_event_forecast(
             darksky_key,
-            sunset_time,
+            event_time,
             lat_long=(location.latitude, location.longitude)
         )
-        status_text = weather.get_status_text(forecast, sunset_time)
+        status_text = weather.get_status_text(forecast, args.event, event_time)
     else:
         status_text = get_random_status_text()
 

@@ -5,21 +5,21 @@ from random import choice
 from darksky import forecast as get_forecast
 
 
-def get_sunset_forecast(darksky_key, sunset_time, lat_long):
-    # Get the forecast from *just before* sunset to avoid night-themed emoji
-    just_before_sunset_time = sunset_time - datetime.timedelta(minutes=10)
-    with get_forecast(darksky_key, *lat_long, time=just_before_sunset_time.isoformat()) as forecast:
+def get_event_forecast(darksky_key, event_time, lat_long):
+    # Get the forecast from *just before* sunrise/sunset to avoid night-themed emoji
+    just_before_event_time = event_time - datetime.timedelta(minutes=10)
+    with get_forecast(darksky_key, *lat_long, time=just_before_event_time.isoformat()) as forecast:
         return forecast
 
 
-def get_status_text(forecast, sunset_time):
+def get_status_text(forecast, event, event_time):
     hourly = forecast['hourly']
     units = forecast['flags']['units']
     currently = forecast['currently']
 
     return '\n'.join(
         filter(None, [
-            '🌅 sunset at {}\n'.format(sunset_time.strftime('%I:%M%p')),
+            '🌅 sunset {}\n'.format(event_time.strftime('%I:%M%p')),
             summary(hourly, currently),
             temp(currently, units),
             cloudiness(currently),
